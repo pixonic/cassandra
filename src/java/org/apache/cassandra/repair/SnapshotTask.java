@@ -17,16 +17,15 @@
  */
 package org.apache.cassandra.repair;
 
-import java.net.InetAddress;
-import java.util.List;
-import java.util.concurrent.RunnableFuture;
-
 import com.google.common.util.concurrent.AbstractFuture;
-
 import org.apache.cassandra.db.SnapshotCommand;
 import org.apache.cassandra.net.IAsyncCallbackWithFailure;
 import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.net.MessagingService;
+
+import java.net.InetAddress;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SnapshotTask is a task that sends snapshot request.
@@ -44,12 +43,16 @@ public class SnapshotTask extends AbstractFuture<InetAddress> implements Runnabl
 
     public void run()
     {
-        MessagingService.instance().sendRRWithFailure(new SnapshotCommand(desc.keyspace,
-                                                                          desc.columnFamily,
-                                                                          desc.sessionId.toString(),
-                                                                          false).createMessage(),
-                                                      endpoint,
-                                                      new SnapshotCallback(this));
+        MessagingService.instance().sendRR(
+                new SnapshotCommand(
+                        desc.keyspace,
+                        desc.columnFamily,
+                        desc.sessionId.toString(),
+                        false).createMessage(),
+                endpoint,
+                new SnapshotCallback(this),
+                TimeUnit.HOURS.toMillis(1),
+                true);
     }
 
     /**
